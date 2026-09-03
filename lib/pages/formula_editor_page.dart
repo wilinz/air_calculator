@@ -18,6 +18,7 @@ import 'package:flutter_tts/flutter_tts.dart';
 import '../i18n/app_translations.dart';
 import 'benchmark_page.dart';
 import '../models/gesture.dart';
+import '../utils/latex_text.dart';
 import '../services/gesture_recognizer.dart';
 import '../services/mathwriting_recognition_service.dart';
 import '../services/point_tracker.dart';
@@ -435,6 +436,11 @@ class _FormulaEditorPageState extends State<FormulaEditorPage>
     final s = v.selection;
     final start = s.isValid ? s.start : v.text.length;
     final end = s.isValid ? s.end : v.text.length;
+    // 别让插入的字母粘到左边的命令名上（\pi + e = \pie）
+    if (needsSpaceBeforeInsert(v.text, start, text)) {
+      text = ' $text';
+      if (cursorAfter != null) cursorAfter += 1;
+    }
     final newText = v.text.replaceRange(start, end, text);
     final pos =
         (cursorAfter != null ? start + cursorAfter : start + text.length).clamp(
@@ -462,110 +468,43 @@ class _FormulaEditorPageState extends State<FormulaEditorPage>
     final hit = _findEnclosingSlot(tree, pos);
 
     if (hit != null) {
-      // 槽起点：跳出槽（到结构前），不删除任何 LaTeX 字符
+      // 槽起点：不删字符，只移动光标——退到同结构的前一个槽末尾，
+      // 没有前一个槽才跳出整个结构。全空则整体删掉。
       if (pos == hit.slot.contentStart) {
-        // 如果整个结构所有槽都为空，直接删掉它
-        if (_isAtomEmpty(hit.atom)) {
+        final target = _backspaceAtSlotStart(hit.atom, hit.slot);
+        if (target == null) {
           _latex.value = TextEditingValue(
             text: v.text.replaceRange(hit.atom.srcStart, hit.atom.srcEnd, ''),
             selection: TextSelection.collapsed(offset: hit.atom.srcStart),
           );
         } else {
           _latex.value = v.copyWith(
-            selection: TextSelection.collapsed(offset: hit.atom.srcStart),
+            selection: TextSelection.collapsed(offset: target),
           );
         }
         return;
       }
-      // 槽中间：删一个槽内字符（pos-1 必然 ≥ contentStart）
+      // 槽中间：与顶层同一套判断，命令叶子整体删除而不是削掉一个字母
+      final r = _backspaceInSiblings(hit.slot.children, pos);
       _latex.value = TextEditingValue(
-        text: v.text.replaceRange(pos - 1, pos, ''),
-        selection: TextSelection.collapsed(offset: pos - 1),
+        text: v.text.replaceRange(r.start, r.end, ''),
+        selection: TextSelection.collapsed(offset: r.caret),
       );
       return;
     }
 
-    // 顶层：找紧邻光标左侧的 atom（srcEnd == pos）
-    final leftAtom = _findAtomEndingAt(tree, pos);
-    if (leftAtom != null) {
-      final hasSlots = _slotsOf(leftAtom).isNotEmpty;
-      if (hasSlots && !_isAtomEmpty(leftAtom)) {
-        // 跳进最后一个非空槽末尾，让用户继续编辑内部
-        final slots = _slotsOf(leftAtom);
-        final lastNonEmpty = slots.lastWhere(
-          (sl) => sl.children.isNotEmpty,
-          orElse: () => slots.last,
-        );
-        _latex.value = v.copyWith(
-          selection: TextSelection.collapsed(offset: lastNonEmpty.contentEnd),
-        );
-        return;
-      }
-      // 整体删除（结构空、或单字符叶子、或如 \pi/\sin 这种命令叶子）
-      _latex.value = TextEditingValue(
-        text: v.text.replaceRange(leftAtom.srcStart, leftAtom.srcEnd, ''),
-        selection: TextSelection.collapsed(offset: leftAtom.srcStart),
-      );
-      return;
-    }
-
-    // 兜底：单字符删除
+    // 顶层：同一套判断
+    final r = _backspaceInSiblings(tree, pos);
     _latex.value = TextEditingValue(
-      text: v.text.replaceRange(pos - 1, pos, ''),
-      selection: TextSelection.collapsed(offset: pos - 1),
+      text: v.text.replaceRange(r.start, r.end, ''),
+      selection: TextSelection.collapsed(offset: r.caret),
     );
   }
 
   // ── 解析树辅助 ────────────────────────────────────────────────────────
 
-  /// 列出 atom 的所有可编辑槽（递归到 ScriptAtom 的 base）
-  List<_Slot> _slotsOf(_Atom atom) {
-    if (atom is _FracAtom) return [atom.num, atom.den];
-    if (atom is _BinomAtom) return [atom.top, atom.bot];
-    if (atom is _SqrtAtom) {
-      return [if (atom.idx != null) atom.idx!, atom.content];
-    }
-    if (atom is _ScriptAtom) {
-      return [
-        ..._slotsOf(atom.base),
-        if (atom.sup != null) atom.sup!,
-        if (atom.sub != null) atom.sub!,
-      ];
-    }
-    return const [];
-  }
-
-  bool _isAtomEmpty(_Atom atom) {
-    final slots = _slotsOf(atom);
-    if (slots.isEmpty) return false;
-    return slots.every((s) => s.children.isEmpty);
-  }
-
-  /// 在 atoms（递归）中找包含 cursor 的最深一层槽
-  ({_Slot slot, _Atom atom})? _findEnclosingSlot(
-    List<_Atom> atoms,
-    int cursor,
-  ) {
-    for (final atom in atoms) {
-      for (final slot in _slotsOf(atom)) {
-        if (cursor >= slot.contentStart && cursor <= slot.contentEnd) {
-          final deeper = _findEnclosingSlot(slot.children, cursor);
-          if (deeper != null) return deeper;
-          return (slot: slot, atom: atom);
-        }
-      }
-    }
-    return null;
-  }
 
   /// 在顶层 atoms 中找以 pos 结束的 atom（不递归）
-  _Atom? _findAtomEndingAt(List<_Atom> atoms, int pos) {
-    for (final atom in atoms) {
-      if (atom.srcEnd == pos) return atom;
-    }
-    return null;
-  }
-
   void _moveCursor(int dir) {
     final v = _latex.value;
     final s = v.selection;

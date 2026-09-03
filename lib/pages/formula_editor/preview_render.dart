@@ -601,6 +601,12 @@ extension _PreviewRender on _FormulaEditorPageState {
     if (atom is _ScriptAtom) {
       return _buildScript(atom, cursor, fontSize);
     }
+    if (atom is _MatrixAtom) {
+      return _buildMatrix(atom, cursor, fontSize);
+    }
+    if (atom is _FuncAtom) {
+      return _buildFunc(atom, cursor, fontSize);
+    }
     return Text(
       atom.toString(),
       style: const TextStyle(color: Colors.red, fontSize: 12),
@@ -619,27 +625,56 @@ extension _PreviewRender on _FormulaEditorPageState {
         },
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 1),
-          child: Math.tex(
+          child: _sizedLikeDigit(
             atom.latex,
+            fontSize,
+            Math.tex(
+              atom.latex,
             textStyle: TextStyle(color: _fgFormula, fontSize: fontSize),
-            onErrorFallback: (_) => Container(
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-              decoration: BoxDecoration(
-                color: _Pal.errorBg,
-                borderRadius: BorderRadius.circular(3),
-              ),
-              child: Text(
-                atom.latex,
-                style: const TextStyle(
-                  color: _Pal.error,
-                  fontSize: 13,
-                  fontFamily: 'monospace',
+              onErrorFallback: (_) => Container(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                decoration: BoxDecoration(
+                  color: _Pal.errorBg,
+                  borderRadius: BorderRadius.circular(3),
+                ),
+                child: Text(
+                  atom.latex,
+                  style: const TextStyle(
+                    color: _Pal.error,
+                    fontSize: 13,
+                    fontFamily: 'monospace',
+                  ),
                 ),
               ),
             ),
           ),
         ),
       ),
+    );
+  }
+
+  /// 小数点等矮字形的基线修正。
+  ///
+  /// 每个字符是独立的 Math.tex（逐字符成 atom 才有逐位的光标停靠点），
+  /// 而外层 Row 是 CrossAxisAlignment.center——`.` 的字形盒子只有一点点
+  /// 高，被垂直居中之后就跑到中间去了，看着像点乘。
+  ///
+  /// 这里给它撑一个和数字等高的盒子并底对齐，等价于放回基线上。撑高用
+  /// 一个透明的 `0`，跟着字体走，不用手算行高。
+  Widget _sizedLikeDigit(String latex, double fontSize, Widget child) {
+    if (latex != '.') return child;
+    return Stack(
+      alignment: Alignment.bottomCenter,
+      children: [
+        Opacity(
+          opacity: 0,
+          child: Math.tex(
+            '0',
+            textStyle: TextStyle(color: _fgFormula, fontSize: fontSize),
+          ),
+        ),
+        child,
+      ],
     );
   }
 
@@ -682,6 +717,131 @@ extension _PreviewRender on _FormulaEditorPageState {
             child: den,
           ),
         ],
+      ),
+    );
+  }
+
+  /// 一元函数：函数名 + 参数槽。
+  ///
+  /// 不额外加括号——LaTeX 里 \sin{\frac{\pi}{2}} 本来就渲染成 sin 紧跟一个
+  /// 分式，加了反而和不带花括号的写法长得不一样。
+  Widget _buildFunc(_FuncAtom atom, int cursor, double fontSize) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 1, right: 2),
+          child: Math.tex(
+            '\\${atom.cmd}',
+            textStyle: TextStyle(color: _fgFormula, fontSize: fontSize),
+            onErrorFallback: (_) => Text(
+              atom.cmd,
+              style: TextStyle(color: _fgFormula, fontSize: fontSize),
+            ),
+          ),
+        ),
+        _buildSlotRow(
+          atom.arg.children,
+          rowStart: atom.arg.contentStart,
+          rowEnd: atom.arg.contentEnd,
+          cursor: cursor,
+          fontSize: fontSize,
+          placeholderIfEmpty: true,
+        ),
+      ],
+    );
+  }
+
+  /// 矩阵：单元格网格 + 按环境名选定界符。
+  ///
+  /// 定界符用 IntrinsicHeight 撑满整个网格高度，而不是按行数估字号——
+  /// 单元格里放了分式的时候估算会明显对不齐。
+  Widget _buildMatrix(_MatrixAtom atom, int cursor, double fontSize) {
+    final inSize = fontSize * 0.9;
+    final grid = Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        for (final row in atom.rows)
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              for (final cell in row)
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 5,
+                    vertical: 2,
+                  ),
+                  child: _buildSlotRow(
+                    cell.children,
+                    rowStart: cell.contentStart,
+                    rowEnd: cell.contentEnd,
+                    cursor: cursor,
+                    fontSize: inSize,
+                    placeholderIfEmpty: true,
+                  ),
+                ),
+            ],
+          ),
+      ],
+    );
+
+    final (left, right) = _matrixDelims(atom.env);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 2),
+      child: IntrinsicHeight(
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (left != null) _matrixDelim(left, fontSize),
+            grid,
+            if (right != null) _matrixDelim(right, fontSize),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 环境名 → 左右定界符。null 表示不画（matrix 环境本身没有括号）。
+  (String?, String?) _matrixDelims(String env) => switch (env) {
+    'vmatrix' => ('|', '|'),
+    'Vmatrix' => ('‖', '‖'),
+    'pmatrix' => ('(', ')'),
+    'bmatrix' => ('[', ']'),
+    'Bmatrix' => ('{', '}'),
+    _ => (null, null),
+  };
+
+  Widget _matrixDelim(String ch, double fontSize) {
+    // 竖线画成实心细条，用字符会随字体在不同高度下断开
+    if (ch == '|' || ch == '‖') {
+      final bars = ch == '|' ? 1 : 2;
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 3),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (var k = 0; k < bars; k++)
+              Container(
+                width: 1.5,
+                margin: EdgeInsets.only(left: k == 0 ? 0 : 2),
+                color: _fgFormula,
+              ),
+          ],
+        ),
+      );
+    }
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 1),
+      child: FittedBox(
+        fit: BoxFit.fitHeight,
+        child: Text(
+          ch,
+          style: TextStyle(color: _fgFormula, fontSize: fontSize),
+        ),
       ),
     );
   }
