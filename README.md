@@ -4,11 +4,6 @@
 
 > 2026 届桂林电子科技大学本科毕业设计，校级优秀毕业设计。
 
-<p align="center"><img src="docs/images/hero.webp" width="320" alt="识别 log₂8+79+|矩阵|+√(3/4) 并求值"></p>
-
-上图是触屏手写与公式键盘混合输入的结果：`\log_{2}8 + 79 + |\begin{matrix}2&3\\4&5\end{matrix}| + \sqrt{\frac{3}{4}}`
-——对数、行列式、根式、分数四种结构混排，实时渲染并求值。
-
 | 空闲 | 书写中 | 识别完成 |
 |:---:|:---:|:---:|
 | ![](docs/images/app_overview_idle.webp) | ![](docs/images/app_overview_writing.webp) | ![](docs/images/app_overview_recognized.webp) |
@@ -39,9 +34,12 @@
 触屏与空中两种模式共用同一份公式状态，切换不丢编辑结果。差别只在控件布局：
 触屏铺满全屏，空中把可点击控件约束在屏幕一侧，避开手部活动区免得误触。
 
-| ![](docs/images/ui_main_touch.webp) | ![](docs/images/ui_main_air.webp) |
+| ![](docs/images/hero.webp) | ![](docs/images/ui_main_air.webp) |
 |:---:|:---:|
 | **触屏模式**<br>标题栏、公式预览区、光标拖动条、<br>LaTeX 源码行、快捷工具栏、符号面板 | **空中模式**<br>相机预览铺底，编辑器 UI 半透明靠边，<br>笔迹画布 / 手部骨架 / 悬停进度环三层叠加 |
+
+左图是触屏手写与公式键盘混合输入的结果：`\log_{2}8 + 79 + |\begin{matrix}2&3\\4&5\end{matrix}| + \sqrt{\frac{3}{4}}`
+——对数、行列式、根式、分数四种结构混排，实时渲染并求值。
 
 另有三个辅助界面：
 
