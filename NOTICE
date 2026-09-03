@@ -1,0 +1,43 @@
+air-calculator
+
+The Flutter client of the Air Calculator project.
+
+Copyright 2026 wilinz.
+
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use
+this work except in compliance with the License. You may obtain a copy of the
+License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software distributed
+under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+CONDITIONS OF ANY KIND, either express or implied. See the License for the
+specific language governing permissions and limitations under the License.
+
+--------------------------------------------------------------------------------
+
+## Names and marks
+
+The Apache License 2.0 covers the code in this repository. As stated in section
+6 of that License, it grants no rights to the trade names, trademarks, service
+marks, product names, logos or app icons of the copyright holder.
+
+The following are reserved and are NOT licensed to you:
+
+    Air Calculator
+    AirCalculator
+    air_calculator (as a product or application name)
+    the application icons and logos in this repository
+
+You are free to use, modify, redistribute and commercially exploit the code,
+including publishing derivative applications on the App Store, Google Play or
+any other channel. You may NOT publish, market or otherwise identify such a
+derivative work using any of the reserved names above, or any name confusingly
+similar to them, without prior written permission from the copyright holder.
+Fork it, but ship it under your own name.
+
+Factual, non-branding references to this project's name are fine — for example
+stating that your work is "based on Air Calculator" or "a fork of Air
+Calculator", provided this does not suggest endorsement by or affiliation with
+the copyright holder.

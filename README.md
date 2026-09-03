@@ -95,3 +95,17 @@ Rust 核心由 `packages/mwh` 的 build hook 编译，不需要单独构建。
 
 相机（空中书写）、麦克风（语音指令）。iOS 在 `Info.plist`、Android 在
 `AndroidManifest.xml`，首次进入对应功能时申请。
+
+## License
+
+Apache License 2.0 — see `LICENSE` and `NOTICE`.
+
+The code is free to use, modify, redistribute and commercialize, including
+publishing derivative applications on the App Store, Google Play or anywhere
+else. Per section 6 of the Apache License 2.0, no trademark or product name
+rights are granted: **Air Calculator**, **AirCalculator**, `air_calculator` as
+a product name, and the application icons and logos in this repository are
+reserved, and may not be used to publish or promote a derivative work without
+prior written permission. Fork it, but ship it under your own name. Factual
+references such as "based on Air Calculator" are fine, as long as they do not
+suggest endorsement.
