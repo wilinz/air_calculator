@@ -21,11 +21,5 @@ dev_dependencies:
   lints: ^6.0.0
   test: ^1.25.0
 
-# 本地开发：指向 air_calculator-rs/scripts/fetch_litert.sh 的产物（仅 Android 需要）。
-# 运行时构件发布 release 后，这段可以删掉，改由 tool/runtime.lock 下载。
-hooks:
-  user_defines:
-    mwh:
-      crate_path: /Users/wilinz/Documents/air-calculator/air_calculator-rs/crates/mwh-ffi
-      # 平台子目录由 build hook 按当前目标挑；测试跑在主机上，即 macos-arm64。
-      runtime_root: /Users/wilinz/Documents/air-calculator/edge-infer/third_party/build
+# 本包单独跑测试时也要编 Rust 核心。位置由 hook 按并排 checkout 的布局
+# 自己找，不需要在这里写死——写死绝对路径会把用户名带进仓库，别人也用不了。

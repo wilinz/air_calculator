@@ -26,14 +26,25 @@ void main(List<String> args) async {
     final backends = backendsFor(code.targetOS);
     final backend = backends.first;
 
-    final cratePath = input.userDefines['crate_path'] as String?;
-    if (cratePath == null) {
+    // 几个仓并排 checkout 是文档里写明的布局，按它给出默认位置，clone
+    // 下来就能构建。放在别处的话用 user_defines 覆盖；相对路径按本包根
+    // 目录解析，绝对路径原样使用——写死绝对路径会把用户名和目录结构带进
+    // 仓库，别人也用不了。
+    String resolveFromPackage(String path) =>
+        path.startsWith('/') ? path : input.packageRoot.resolve(path).toFilePath();
+
+    final cratePath = resolveFromPackage(
+      input.userDefines['crate_path'] as String? ??
+          '../../../air_calculator-rs/crates/aircalc-ffi',
+    );
+    if (!Directory(cratePath).existsSync()) {
       throw StateError(
-        'aircalc_native: 需要在应用的 pubspec.yaml 里指出 Rust 核心库位置：\n'
+        'aircalc_native: 找不到 Rust 核心库 $cratePath\n'
+        '默认按几个仓并排 checkout 找；放在别处就在应用的 pubspec.yaml 里指出：\n'
         'hooks:\n'
         '  user_defines:\n'
-        '    mwh:\n'
-        '      crate_path: /abs/path/to/air_calculator-rs/crates/mwh-ffi',
+        '    aircalc_native:\n'
+        '      crate_path: ../path/to/air_calculator-rs/crates/aircalc-ffi',
       );
     }
 
@@ -52,14 +63,20 @@ void main(List<String> args) async {
       // 运行时构件还没发 release 之前，应用在自己的 pubspec 里指出本地产物：
       //   hooks:
       //     user_defines:
-      //       mwh:
-      //         runtime_root: /abs/path/to/air_calculator-rs/third_party/build
+      //       aircalc_native:
+      //         runtime_root: ../path/to/edge-infer/third_party/build
       // 或指到单个平台的产物（调试单一平台时）：
-      //         runtime_dir: /abs/path/.../<target>/install
+      //         runtime_dir: ../path/.../<target>/install
       // 走 user_defines 而不是环境变量，是因为 hook runner 会清空环境。
-      localDir: input.userDefines['runtime_dir'] as String?,
-      // 更常用的写法：指到 third_party/build，平台子目录由 hook 自己挑。
-      localRoot: input.userDefines['runtime_root'] as String?,
+      localDir: switch (input.userDefines['runtime_dir'] as String?) {
+        final d? => resolveFromPackage(d),
+        null => null,
+      },
+      // 默认同样按并排 checkout 找。平台子目录由 hook 自己挑。
+      localRoot: resolveFromPackage(
+        input.userDefines['runtime_root'] as String? ??
+            '../../../edge-infer/third_party/build',
+      ),
     );
 
     await RustBuilder(

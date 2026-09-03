@@ -128,13 +128,15 @@ flutter:
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
 
-# mwh 的 build hook 需要知道 Rust 核心库与 ExecuTorch 构件在哪。
-# hook runner 会清空环境变量，所以只能走 user_defines 而非环境变量。
-# 运行时构件发布 release 后，runtime_dir 可删掉，改由 tool/runtime.lock 下载。
-hooks:
-  user_defines:
-    aircalc_native:
-      crate_path: /Users/wilinz/Documents/air-calculator/air_calculator-rs/crates/aircalc-ffi
-      # 指到 third_party/build，平台子目录（ios-arm64 / android-arm64 / …）
-      # 由 mwh 的 build hook 按当前目标自己挑。
-      runtime_root: /Users/wilinz/Documents/air-calculator/edge-infer/third_party/build
+# Rust 核心库与推理运行时的位置。默认按几个仓并排 checkout 去找
+# （见 README 的"仓库关系"），放在别处才需要下面这段。相对路径按
+# packages/aircalc_native 解析。hook runner 会清空环境变量，所以只能走
+# user_defines 而非环境变量。
+#
+# hooks:
+#   user_defines:
+#     aircalc_native:
+#       crate_path: ../path/to/air_calculator-rs/crates/aircalc-ffi
+#       # 指到 third_party/build，平台子目录（ios-arm64 / android-arm64 / …）
+#       # 由 build hook 按当前目标自己挑。
+#       runtime_root: ../path/to/edge-infer/third_party/build
