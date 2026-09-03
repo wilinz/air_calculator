@@ -150,7 +150,7 @@ token 级 bbox → 用从真实人工 InkML 抽出的手写笔画字库按 bbox 
 
 | | iPhone 15（iOS 26.3） | Redmi K40s（Android 13） |
 |---|---|---|
-| 后端 | 裸 Core ML，神经引擎 | LiteRT，XNNPACK（CPU） |
+| 后端 | 裸 Core ML，神经引擎 | LiteRT，GPU 加速器（OpenCL） |
 | 编码器 | 3.1 ms | 1.9 ms |
 | Prefill | 2.7 ms | 2.7 ms |
 | 每步解码 | 3.2 ms | 11.3 ms |
@@ -174,11 +174,13 @@ token 级 bbox → 用从真实人工 InkML 抽出的手写笔画字库按 bbox 
 MathWriting 全量验证集上 EM 77.09% / char-CER 3.84%；基准页这 500 条是随机抽样，
 ExpRate 74.60%。
 
-上表测的是**识别**这条链路。Android 上它走 CPU（`Prefer::Auto`）——encoder 的
-790 个算子里只有一百多个能上 GPU 加速器，partial offload 的来回搬运不划算。
-**手部检测**是另一回事：模型小、层数浅，正好是 GPU delegate 合算的那一类，所以
-它显式走 `Prefer::LiteRtGpu`，靠 OpenCL 跑，也顺带把它从 CPU 上挪开，不跟识别抢。
-`AndroidManifest.xml` 里那几行 `uses-native-library libOpenCL.so` 就是为它加的。
+Android 上识别与手部检测都请求 GPU 加速器（OpenCL），接不了的算子由 CPU 兜底。
+encoder 是 partial offload（790 个算子里 146 个上 GPU），prefill 与 decode 共用
+同一个 CompiledModel，这样 prefill 的 KV 输出缓冲能直接对接 decode 的输入缓冲，
+省掉一趟 GPU→CPU→GPU 往返——实测那一趟占 prefill 耗时的八成。
+`AndroidManifest.xml` 里那几行 `uses-native-library libOpenCL.so` 就是为此声明的：
+targetSdk ≥ 31 起厂商的非 NDK 原生库默认对应用不可见，漏了会静默退回 OpenGL，
+手部检测单帧从十几毫秒掉到 44 ms。
 
 ## 权重与导出
 
