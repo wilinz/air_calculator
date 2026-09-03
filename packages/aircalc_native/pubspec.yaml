@@ -1,0 +1,31 @@
+name: aircalc_native
+description: 空中手写数学公式识别。笔画序列进，LaTeX 出；推理与解码全在 Rust 侧。
+version: 0.1.0
+publish_to: none
+
+# 纯 Dart 包，不是 Flutter 插件：原生库由 hook/build.dart 编译并打包，
+# 因而 `dart run` / `dart test` 同样可用，也不需要 android/ ios/ macos/
+# 那几套构建胶水。
+environment:
+  sdk: ">=3.10.0 <4.0.0"
+
+dependencies:
+  ffi: ^2.1.0
+  # build hook 用。
+  hooks: ^2.2.0
+  code_assets: ">=1.2.1 <3.0.0"
+  native_toolchain_rust: ^1.0.6
+
+dev_dependencies:
+  ffigen: ^19.1.0
+  lints: ^6.0.0
+  test: ^1.25.0
+
+# 本地开发：指向 air_calculator-rs/scripts/fetch_litert.sh 的产物（仅 Android 需要）。
+# 运行时构件发布 release 后，这段可以删掉，改由 tool/runtime.lock 下载。
+hooks:
+  user_defines:
+    mwh:
+      crate_path: /Users/wilinz/Documents/air-calculator/air_calculator-rs/crates/mwh-ffi
+      # 平台子目录由 build hook 按当前目标挑；测试跑在主机上，即 macos-arm64。
+      runtime_root: /Users/wilinz/Documents/air-calculator/edge-infer/third_party/build

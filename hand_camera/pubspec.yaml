@@ -1,0 +1,34 @@
+name: hand_camera
+description: Native camera + hand landmark detection via the mwh core library. Zero-copy pipeline.
+version: 0.0.1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+  flutter: '>=3.3.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: com.wilinz.hand_camera
+        pluginClass: HandCameraPlugin
+      ios:
+        pluginClass: HandCameraPlugin
+      macos:
+        pluginClass: HandCameraPlugin
+
+  assets:
+    # 整个目录，因为后缀随平台变：Android 上是 MediaPipe 原本的 .tflite
+    # （LiteRT + GPU delegate），iOS/macOS 上是由 tools/hand_models_to_pte.py
+    # 转出的 .pte（ExecuTorch + Core ML）。构建前由应用的
+    # tool/copy_platform_models.sh 放好对应那份，并清掉另一份。
+    # 原 .task 是 MediaPipe SDK 的打包格式，切到 aircalc 原生核心后不再需要。
+    - assets/models/
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter

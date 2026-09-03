@@ -1,0 +1,6 @@
+[submodule "hand_camera"]
+	path = hand_camera
+	url = https://github.com/wilinz/hand_camera.git
+[submodule "flutter_math_fork"]
+	path = flutter_math_fork
+	url = https://github.com/wilinz/flutter_math.git

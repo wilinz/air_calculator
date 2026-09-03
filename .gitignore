@@ -1,0 +1,73 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# The .vscode folder contains launch configuration and tasks you configure in
+# VS Code which you may wish to be included in version control, so this line
+# is commented out by default.
+#.vscode/
+
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+/build/
+/coverage/
+
+# Symbolication related
+app.*.symbols
+
+# Obfuscation related
+app.*.map.json
+
+# Android Studio will place build artifacts here
+/android/app/debug
+/android/app/profile
+/android/app/release
+
+# Model weights (large binary files, not tracked in git)
+assets/models/*.pte
+assets/models/*.tflite
+assets/models/*.pt
+assets/models/*.bin
+assets/models/*.onnx
+hand_camera/assets/models/*.task
+
+# 平台专用权重源目录（构建脚本从这里拷贝到 assets/models/）
+platform_models/
+
+# hand_camera plugin (local package)
+hand_camera/.dart_tool/
+hand_camera/.flutter-plugins-dependencies
+hand_camera/pubspec.lock
+hand_camera/build/
+hand_camera/coverage/
+hand_camera/example/.dart_tool/
+hand_camera/example/.flutter-plugins-dependencies
+hand_camera/example/build/
+hand_camera/example/coverage/
+hand_camera/example/android/app/debug/
+hand_camera/example/android/app/profile/
+hand_camera/example/android/app/release/
+
+# 空中书写的调试抓取，随手写随手生成，不进仓库。
+assets/live_capture.jsonl

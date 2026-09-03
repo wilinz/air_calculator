@@ -1,0 +1,9 @@
+-keep class com.google.mediapipe.** { *; }
+-keep class com.google.common.** { *; }
+-keep interface com.google.common.** { *; }
+-keepclassmembers class * extends com.google.protobuf.GeneratedMessageLite { <fields>; }
+-dontwarn javax.annotation.**
+-dontwarn javax.annotation.processing.**
+-dontwarn javax.lang.model.**
+-dontwarn com.google.mediapipe.proto.**
+-dontwarn com.google.mediapipe.framework.**

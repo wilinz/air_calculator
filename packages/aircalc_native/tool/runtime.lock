@@ -1,0 +1,18 @@
+# 推理运行时构件的锁定清单。
+#
+# 构件由 air_calculator-rs/scripts/build_executorch.sh 从源码编出，
+# 按平台发成 release，此处按 SHA-256 钉死；对不上即构建失败——
+# 避免"本地能跑、换台机器版本不同"这类问题。
+#
+# 本地开发可跳过下载：把 MWH_RUNTIME_DIR 指向
+# air_calculator-rs/third_party/build/<target>/install 即可。
+
+VERSION=1.2.0
+SOURCE_TAG=release/1.2
+
+# 各平台构件的 SHA-256，发布 release 后填入。
+IOS_ARM64_SHA256=
+IOS_SIM_ARM64_SHA256=
+ANDROID_ARM64_SHA256=
+ANDROID_ARMV7_SHA256=
+MACOS_ARM64_SHA256=

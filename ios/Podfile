@@ -1,0 +1,76 @@
+# Uncomment this line to define a global platform for your project
+platform :ios, '18.0'
+
+# CocoaPods analytics sends network stats synchronously affecting flutter build latency.
+ENV['COCOAPODS_DISABLE_STATS'] = 'true'
+
+project 'Runner', {
+  'Debug' => :debug,
+  'Profile' => :release,
+  'Release' => :release,
+}
+
+def flutter_root
+  generated_xcode_build_settings_path = File.expand_path(File.join('..', 'Flutter', 'Generated.xcconfig'), __FILE__)
+  unless File.exist?(generated_xcode_build_settings_path)
+    raise "#{generated_xcode_build_settings_path} must exist. If you're running pod install manually, make sure flutter pub get is executed first"
+  end
+
+  File.foreach(generated_xcode_build_settings_path) do |line|
+    matches = line.match(/FLUTTER_ROOT\=(.*)/)
+    return matches[1].strip if matches
+  end
+  raise "FLUTTER_ROOT not found in #{generated_xcode_build_settings_path}. Try deleting Generated.xcconfig, then run flutter pub get"
+end
+
+require File.expand_path(File.join('packages', 'flutter_tools', 'bin', 'podhelper'), flutter_root)
+
+flutter_ios_podfile_setup
+
+target 'Runner' do
+  use_frameworks! :linkage => :static
+
+  flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
+
+  target 'RunnerTests' do
+    inherit! :search_paths
+  end
+end
+
+post_install do |installer|
+  installer.pods_project.targets.each do |target|
+    flutter_additional_ios_build_settings(target)
+
+    target.build_configurations.each do |config|
+      config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= [
+        '$(inherited)',
+        'PERMISSION_CAMERA=1',
+      ]
+      # 多签名 Core ML 模型（decoder.pte 的 prefill/step 双方法）需要 iOS 18+ SDK，
+      # 否则 ExecuTorch CoreML backend 会编掉 multifunction 路径，运行时报 0x23。
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '18.0'
+    end
+  end
+
+  # iOS 走 ExecuTorch，但 flutter_litert 在 iOS 端 vendored 了一份 TensorFlowLiteC.xcframework，
+  # 与 MediaPipeTasksVision 内置的 TFLite 撞符号 → Interpreter::ModifyGraphWithDelegate 崩溃。
+  # 这里从 Runner 的 xcconfig 去掉 -framework TensorFlowLiteC*，只保留 MediaPipe 自带的那份。
+  tflite_frameworks_to_strip = %w[TensorFlowLiteC TensorFlowLiteCMetal TensorFlowLiteCCoreML]
+  ['debug', 'profile', 'release'].each do |cfg|
+    xcconfig_path = "#{__dir__}/Pods/Target Support Files/Pods-Runner/Pods-Runner.#{cfg}.xcconfig"
+    next unless File.exist?(xcconfig_path)
+    contents = File.read(xcconfig_path)
+    modified = contents.dup
+    tflite_frameworks_to_strip.each do |fw|
+      modified = modified.gsub(/\s*-framework\s+"#{fw}"/, '')
+      modified = modified.gsub(/\s*-framework\s+#{fw}(?=\s|$)/, '')
+    end
+    File.write(xcconfig_path, modified) if modified != contents
+  end
+
+  # 这里原先有一段 -force_load librust_lib_air_calculator.a 的注入，是
+  # flutter_rust_bridge / cargokit 时代留下的：那时 Rust 侧作为一个 pod 参与
+  # 构建，符号要靠 force_load 拉进 Runner。现在 Rust 核心库走 mwh 的 build
+  # hook（code assets），那个 pod 早已不在依赖里，注入的路径指向一个不存在的
+  # .a，Release 构建直接报 "Build input file cannot be found"。
+end
