@@ -186,8 +186,9 @@ token 级 bbox → 用从真实人工 InkML 抽出的手写笔画字库按 bbox 
 差异只在延迟。长表达式的每步解码反而更快（iPhone 3.2 → 2.9 ms），因为固定开销
 被摊薄了。
 
-MathWriting 全量验证集上 EM 77.09% / char-CER 3.84%；基准页这 500 条是随机抽样，
-ExpRate 74.60%。
+当前部署的 stroke-only v4 权重在 MathWriting 全量验证集（15,638 条，greedy）上
+EM 76.29% / char-CER 4.08%；基准页这 500 条是随机抽样，ExpRate 74.60%。权重、
+训练配方与逐阶段评测见 [air_calculator-models](https://github.com/wilinz/air_calculator-models)。
 
 Android 上识别与手部检测都请求 GPU 加速器（OpenCL），接不了的算子由 CPU 兜底。
 识别的三个子图都**整图下沉**——encoder `152/152`、prefill `455/455`、
@@ -205,7 +206,9 @@ targetSdk ≥ 31 起厂商的非 NDK 原生库默认对应用不可见，漏了�
 
 ## 权重与导出
 
-权重不进 Git。`platform_models/` 放识别模型，手部模型来自 `hand-track` 仓。
+权重不进本仓的 Git。识别模型放 `platform_models/`，来自
+[air_calculator-models](https://github.com/wilinz/air_calculator-models)（走 Git LFS）；
+手部模型来自 [hand-track](https://github.com/wilinz/hand-track) 仓。
 
 ```
 platform_models/android/  prefix_enc.tflite  decoder.tflite  vocab.json
