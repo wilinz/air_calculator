@@ -343,6 +343,12 @@ extension _PreviewRender on _FormulaEditorPageState {
                 _quickGap(),
                 Expanded(child: _quickKey(')', ')')),
                 _quickGap(),
+                // 撤销：把算式回退到上一次。空中模式不放——那边这栏只有 72%
+                // 宽，且 _buildAirActionRow 已经有撤销/撤全部/撤公式三个了。
+                if (!_airMode) ...[
+                  Expanded(child: _quickUndoBtn()),
+                  _quickGap(),
+                ],
                 // 退格
                 Expanded(
                   child: _quickIconBtn(
@@ -427,6 +433,24 @@ extension _PreviewRender on _FormulaEditorPageState {
             fontSize: 18,
             fontWeight: FontWeight.w600,
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _quickUndoBtn() {
+    final disabled = _latexUndo.isEmpty || _busy;
+    return _air(
+      'qicon:undoLatex',
+      disabled ? null : _undoLatex,
+      _quickKeyShell(
+        onTap: disabled ? null : _undoLatex,
+        child: Icon(
+          Icons.undo,
+          size: 20,
+          color: disabled
+              ? _Pal.textWeak
+              : (_airMode ? Colors.white : _Pal.accent),
         ),
       ),
     );
