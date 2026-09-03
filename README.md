@@ -49,20 +49,34 @@
 
 ## 仓库关系
 
-```
-air_calculator                    本仓，Flutter 客户端
-  ├── hand_camera/                相机与手部检测插件（CameraX / AVFoundation）
-  ├── packages/aircalc_native/    核心库的 Dart 绑定与 build hook
-  └── flutter_math_fork/          公式渲染（带光标插入）
+本仓是 Flutter 客户端，内含三个子包：
 
-../air_calculator-rs    识别核心、LaTeX 求值与 C ABI
-../hand-track           手部检测流水线与两端权重
-../edge-infer           推理抽象：Engine trait + LiteRT / Core ML 后端
-../air_calculator_py    模型训练与端侧导出
+```
+hand_camera/                相机与手部检测插件（CameraX / AVFoundation）
+packages/aircalc_native/    核心库的 Dart 绑定与 build hook
+flutter_math_fork/          公式渲染（带光标插入）
 ```
 
-几个仓要并排 checkout：Rust 侧是 path 依赖，客户端在 `pubspec.yaml` 的
-`hooks.user_defines` 里给出核心库与运行时构件的绝对路径。
+另有四个兄弟仓：
+
+| 仓库 | 职责 |
+|---|---|
+| [air_calculator-rs](https://github.com/wilinz/air_calculator-rs) | 识别核心、LaTeX 求值与 C ABI |
+| [hand-track](https://github.com/wilinz/hand-track) | 手部检测流水线与两端权重 |
+| [edge-infer](https://github.com/wilinz/edge-infer) | 推理抽象：`Engine` trait + LiteRT / Core ML 后端 |
+| [air_calculator_py](https://github.com/wilinz/air_calculator_py) | 模型训练与端侧导出 |
+
+几个仓要**并排 checkout**——Rust 侧是 path 依赖，build hook 默认按这个布局去找
+核心库与运行时构件（放在别处见 `pubspec.yaml` 里的 `hooks.user_defines` 说明）：
+
+```
+some-dir/
+├── air_calculator/
+├── air_calculator-rs/
+├── air_calculator_py/
+├── edge-infer/
+└── hand-track/
+```
 
 ## 架构
 
