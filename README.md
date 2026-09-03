@@ -2,9 +2,16 @@
 
 空中手写计算器。摄像头里用手指在空中书写数学表达式，端侧识别成 LaTeX 并求值。
 
+> 2026 届桂林电子科技大学本科毕业设计，校级优秀毕业设计。
+
+<p align="center"><img src="docs/images/hero.webp" width="320" alt="识别 log₂8+79+|矩阵|+√(3/4) 并求值"></p>
+
+上图是触屏手写与公式键盘混合输入的结果：`\log_{2}8 + 79 + |\begin{matrix}2&3\\4&5\end{matrix}| + \sqrt{\frac{3}{4}}`
+——对数、行列式、根式、分数四种结构混排，实时渲染并求值。
+
 | 空闲 | 书写中 | 识别完成 |
 |:---:|:---:|:---:|
-| ![](docs/images/app_overview_idle.jpg) | ![](docs/images/app_overview_writing.jpg) | ![](docs/images/app_overview_recognized.jpg) |
+| ![](docs/images/app_overview_idle.webp) | ![](docs/images/app_overview_writing.webp) | ![](docs/images/app_overview_recognized.webp) |
 | 等待抬手，画布显示提示 | 捏合落笔，实时绘制笔迹 | LaTeX 渲染 + 计算结果 + 语音播报 |
 
 三态切换由捏合—释放—停笔状态机驱动，不需要额外操作。
@@ -23,7 +30,7 @@
 除捏合书写外，还有三个复合手势触发系统级动作。判定阈值与帧节拍在
 `lib/pages/formula_editor/gesture_logic.dart`。
 
-| ![](docs/images/gesture_pinch_writing.jpg) | ![](docs/images/gesture_open_palm.jpg) | ![](docs/images/gesture_two_finger.jpg) | ![](docs/images/gesture_air_click.jpg) |
+| ![](docs/images/gesture_pinch_writing.webp) | ![](docs/images/gesture_open_palm.webp) | ![](docs/images/gesture_two_finger.webp) | ![](docs/images/gesture_air_click.webp) |
 |:---:|:---:|:---:|:---:|
 | **捏合书写**<br>拇指食指捏合落笔，<br>指尖中点画轨迹 | **五指张开**<br>立即提交识别 | **双指并拢**<br>拖拽预览区<br>横向滚动看长公式 | **单指悬停**<br>停留触发按钮，<br>高风险按钮要停更久 |
 
@@ -32,13 +39,13 @@
 触屏与空中两种模式共用同一份公式状态，切换不丢编辑结果。差别只在控件布局：
 触屏铺满全屏，空中把可点击控件约束在屏幕一侧，避开手部活动区免得误触。
 
-| ![](docs/images/ui_main_touch.jpg) | ![](docs/images/ui_main_air.jpg) |
+| ![](docs/images/ui_main_touch.webp) | ![](docs/images/ui_main_air.webp) |
 |:---:|:---:|
 | **触屏模式**<br>标题栏、公式预览区、光标拖动条、<br>LaTeX 源码行、快捷工具栏、符号面板 | **空中模式**<br>相机预览铺底，编辑器 UI 半透明靠边，<br>笔迹画布 / 手部骨架 / 悬停进度环三层叠加 |
 
 另有三个辅助界面：
 
-| ![](docs/images/ui_settings.jpg) | ![](docs/images/ui_history.jpg) | ![](docs/images/ui_benchmark.jpg) |
+| ![](docs/images/ui_settings.webp) | ![](docs/images/ui_history.webp) | ![](docs/images/ui_benchmark.webp) |
 |:---:|:---:|:---:|
 | **设置**<br>API Key、语言、骨架开关 | **历史**<br>停靠式底部面板，<br>点击回填、长按复制 | **基准测试**<br>JSONL 导出与统计报告 |
 
@@ -97,7 +104,77 @@ Rust 侧分三个 crate：
 | 识别模型 | `.tflite` 双签名 | `.mlmodelc` 多函数 |
 | 手部模型 | `.tflite` | `.mlmodelc` |
 
-## 模型
+## 模型与训练
+
+识别模型是 decoder-only 的 prefix-LM，**只吃笔画序列**，没有渲染图那一路：
+
+| | |
+|---|---|
+| 笔画编码器 | 轻量 Transformer，13 维时序特征（位置 / 速度 / 曲率 / 抬笔标志 / 全局比例）→ 32 个 prefix token |
+| 解码器 | 8 层因果 self-attention，d=512，nhead=8，词表 230 |
+| 参数量 | 27.1 M（全部可训练） |
+
+prefix 与已生成的 token 拼在同一条因果序列里，跨模态对齐和 LaTeX 生成由同一套
+self-attention 完成，没有 cross-attention——这样导出成端侧图时只有一种算子模式，
+KV cache 的形状也是固定的。
+
+早期版本还有一路 DeiT-Small 图像分支（双流，48.8 M 参数）。去掉之后参数量降到
+27.1 M 而 ExpRate 没有明显损失，端侧延迟大幅下降，所以部署的是 stroke-only 这版。
+
+### 训练
+
+```bash
+cd train
+MATHWRITING_DIR=../../dataset/mathwriting-2024 \
+python3 train.py --modality stroke_only --out ./stroke_v4 --epochs 40 --batch 64
+```
+
+| 超参 | 值 |
+|---|---|
+| 优化器 | AdamW，lr 3e-4，weight decay 0.01 |
+| 调度 | cosine + warmup |
+| batch | 64 × 梯度累积 2（等效 128） |
+| 损失 | 交叉熵，label smoothing 0.1 |
+| 梯度裁剪 | 1.0 |
+| 序列上限 | 笔画点 512，目标 token 64 |
+
+数据是 **MathWriting** 加自建合成集。合成走三步：LLM 批量生成 LaTeX → 渲染出
+token 级 bbox → 用从真实人工 InkML 抽出的手写笔画字库按 bbox 拼装成轨迹，所以
+合成样本的笔画本身是真人写的，只有排版是拼的。训练分两阶段：先在合成数据上预热，
+再用人工数据续训对齐；错误按类型归类后再定向补数据。
+
+## 性能
+
+500 条 MathWriting 样本，端到端（特征提取 → 编码 → prefill → 逐步解码），
+应用内置的基准页跑出：
+
+| | iPhone 15（iOS 26.3） | Redmi K40s（Android 13） |
+|---|---|---|
+| 后端 | 裸 Core ML，神经引擎 | LiteRT，XNNPACK |
+| 编码器 | 3.1 ms | 1.9 ms |
+| Prefill | 2.7 ms | 2.7 ms |
+| 每步解码 | 3.2 ms | 11.3 ms |
+| **总流水线均值** | **44 ms** | **125 ms** |
+| 总流水线 min / max | 10 / 234 ms | 35 / 400 ms |
+| ExpRate | 74.60% | 74.60% |
+
+按输出长度分桶（总流水线均值）：
+
+| token 数 | 样本 | iPhone 15 | Redmi K40s |
+|---|---|---|---|
+| 1–3 | 88 | 14 ms | 41 ms |
+| 4–8 | 108 | 24 ms | 71 ms |
+| 9–16 | 152 | 40 ms | 116 ms |
+| 17+ | 152 | 77 ms | 218 ms |
+
+两端 ExpRate 完全一致，说明特征提取到解码这条链路在两个后端上是数值等价的——
+差异只在延迟。长表达式的每步解码反而更快（iPhone 3.2 → 2.9 ms），因为固定开销
+被摊薄了。
+
+MathWriting 全量验证集上 EM 77.09% / char-CER 3.84%；基准页这 500 条是随机抽样，
+ExpRate 74.60%。
+
+## 权重与导出
 
 权重不进 Git。`platform_models/` 放识别模型，手部模型来自 `hand-track` 仓。
 
