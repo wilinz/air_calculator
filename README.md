@@ -173,7 +173,7 @@ MathWriting 全量验证集上 EM 77.09% / char-CER 3.84%；基准页这 500 条
 ExpRate 74.60%。
 
 Android 上识别与手部检测都请求 GPU 加速器（OpenCL），接不了的算子由 CPU 兜底。
-encoder 是 partial offload（790 个算子里 146 个上 GPU），prefill 与 decode 共用
+encoder 是 partial offload，接不了的算子退回 CPU。prefill 与 decode 共用
 同一个 CompiledModel，这样 prefill 的 KV 输出缓冲能直接对接 decode 的输入缓冲，
 省掉一趟 GPU→CPU→GPU 往返——实测那一趟占 prefill 耗时的八成。
 `AndroidManifest.xml` 里那几行 `uses-native-library libOpenCL.so` 就是为此声明的：
