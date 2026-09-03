@@ -12,13 +12,11 @@
 # 识别的两个模型按平台分后缀：Android 是 LiteRT 的 .tflite（decoder 双签名
 # prefill+decode）；iOS/macOS 的模型走 app bundle，不经这里。vocab.json 三端同名。
 #
-# 但内容不同，目录必须分开：delegate 是烘焙进 .pte 的。iOS/macOS 那份按
-# Core ML fp16 分区（走神经引擎），Android 那份按 XNNPACK fp32 分区。拿错了
-# 不会在加载时报错，而是在 execute 时报 "Backend CoreMLBackend is not
-# registered"，识别静默失败——这个坑踩过一次。
+# 但 vocab.json 的内容按平台不同：Android 那份多 max_kv / n_prefix 两个字段，
+# 给 LiteRT 的双签名 decoder 用。目录必须分开，拿错了不报错，只会识别错。
 #
-# 由 air_calculator_py/export/export_et_hybrid_fp16.py --platform {ios,android}
-# 分别导出。fp32 使 Android 那份约为 iOS 的两倍大（104MB 对 52MB）。
+# Android 那份由 air_calculator_py/export/export_tf_android_fp32.py 导出；
+# iOS 的 Core ML 模型由 export_coreml_ios.py 导出，直接进 Runner 的 bundle。
 #
 # 缺源文件时 fail-fast：直接 exit 1，让上游构建立刻挂掉，避免静默使用错误权重。
 
@@ -67,23 +65,22 @@ HAND_SRC="$PROJ_ROOT/../hand-track/models/$PLATFORM"
 [ -d "$HAND_SRC" ] || HAND_SRC="$SRC/hand"
 HAND_DST="$PROJ_ROOT/hand_camera/assets/models"
 # Android 上手部检测走 LiteRT 的 GPU delegate，要的是 MediaPipe 原本的
-# .tflite；iOS/macOS 走裸 Core ML，模型不进 assets（见上），
-# .pte。文件名同、后缀不同，由平台目录各自提供。
-# 手部检测同理：iOS 那两个模型也走 bundle，不进 hand_camera 的 assets。
+# .tflite；iOS/macOS 走裸 Core ML，那两个模型进 Runner 的 bundle，
+# 不进 hand_camera 的 assets。
 if [ "$PLATFORM" = "android" ]; then
   HAND_REQUIRED=(hand_detector.tflite hand_landmarks_detector.tflite)
-  HAND_STALE=("*.pte")
+  HAND_STALE=()
 else
   HAND_REQUIRED=()
-  HAND_STALE=("*.tflite" "*.pte")
+  HAND_STALE=("*.tflite")
 fi
 # 要清掉的：另一平台的识别权重（后缀不同、名字同，留着会白白多进包近 200MB），
 # 以及 decoder 之前拆成两个文件那版导出的残留（两份各带一套权重）。
 if [ "$PLATFORM" = "android" ]; then
-  STALE_PATTERNS=("*.pte")
+  STALE_PATTERNS=()
 else
-  # iOS 上一份 .pte 都不该留：ExecuTorch 已整体移除。
-  STALE_PATTERNS=("*.tflite" "*.pte")
+  # iOS 的识别模型走 bundle，assets 里的 .tflite 全是 Android 残留。
+  STALE_PATTERNS=("*.tflite")
 fi
 
 for f in "${REQUIRED[@]}"; do
@@ -103,7 +100,7 @@ for f in ${HAND_REQUIRED[@]+"${HAND_REQUIRED[@]}"}; do
 done
 
 # 先清理对方平台残留（用 find -delete 避免 glob 不匹配时 rm 报错）
-for pat in "${STALE_PATTERNS[@]}"; do
+for pat in ${STALE_PATTERNS[@]+"${STALE_PATTERNS[@]}"}; do
   find "$DST" -maxdepth 1 -type f -name "$pat" -delete 2>/dev/null || true
 done
 
@@ -111,9 +108,8 @@ for f in "${REQUIRED[@]}"; do
   cp -f "$SRC/$f" "$DST/$f"
 done
 mkdir -p "$HAND_DST"
-# 另一平台的残留会被 pubspec 的 assets 一并打进包，白白多几 MB，而且插件
-# 按 .tflite → .pte 的顺序找，留着旧的可能选错。
-for pat in "${HAND_STALE[@]}"; do
+# 另一平台的残留会被 pubspec 的 assets 一并打进包，白白多几 MB。
+for pat in ${HAND_STALE[@]+"${HAND_STALE[@]}"}; do
   find "$HAND_DST" -maxdepth 1 -type f -name "$pat" -delete 2>/dev/null || true
 done
 for f in ${HAND_REQUIRED[@]+"${HAND_REQUIRED[@]}"}; do
@@ -122,5 +118,5 @@ done
 
 echo "[copy_platform_models] $PLATFORM → $DST"
 # 通配符按平台只会命中一半，让 ls 的非零返回不要掀翻 set -e。
-ls -lh "$DST"/*.pte "$DST"/*.tflite "$DST"/vocab.json "$HAND_DST"/* 2>/dev/null \
+ls -lh "$DST"/*.tflite "$DST"/vocab.json "$HAND_DST"/* 2>/dev/null \
   | awk '{print "  " $5 "\t" $NF}' || true
