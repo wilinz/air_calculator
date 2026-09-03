@@ -150,7 +150,7 @@ token 级 bbox → 用从真实人工 InkML 抽出的手写笔画字库按 bbox 
 
 | | iPhone 15（iOS 26.3） | Redmi K40s（Android 13） |
 |---|---|---|
-| 后端 | 裸 Core ML，神经引擎 | LiteRT，XNNPACK |
+| 后端 | 裸 Core ML，神经引擎 | LiteRT，XNNPACK（CPU） |
 | 编码器 | 3.1 ms | 1.9 ms |
 | Prefill | 2.7 ms | 2.7 ms |
 | 每步解码 | 3.2 ms | 11.3 ms |
@@ -173,6 +173,12 @@ token 级 bbox → 用从真实人工 InkML 抽出的手写笔画字库按 bbox 
 
 MathWriting 全量验证集上 EM 77.09% / char-CER 3.84%；基准页这 500 条是随机抽样，
 ExpRate 74.60%。
+
+上表测的是**识别**这条链路。Android 上它走 CPU（`Prefer::Auto`）——encoder 的
+790 个算子里只有一百多个能上 GPU 加速器，partial offload 的来回搬运不划算。
+**手部检测**是另一回事：模型小、层数浅，正好是 GPU delegate 合算的那一类，所以
+它显式走 `Prefer::LiteRtGpu`，靠 OpenCL 跑，也顺带把它从 CPU 上挪开，不跟识别抢。
+`AndroidManifest.xml` 里那几行 `uses-native-library libOpenCL.so` 就是为它加的。
 
 ## 权重与导出
 
