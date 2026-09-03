@@ -71,3 +71,6 @@ hand_camera/example/android/app/release/
 
 # 空中书写的调试抓取，随手写随手生成，不进仓库。
 assets/live_capture.jsonl
+
+# 本机签名配置（Apple Team ID 不进版本库）
+ios/Flutter/Local.xcconfig
