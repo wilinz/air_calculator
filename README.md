@@ -11,6 +11,16 @@
 
 三态切换由捏合—释放—停笔状态机驱动，不需要额外操作。
 
+本项目分为五个仓库，需要**并排 checkout**——Rust 侧是 path 依赖。
+
+| 仓库 | 职责 |
+|---|---|
+| **air_calculator** ← 本仓 | Flutter 客户端：UI、相机接入、手势交互与三端集成 |
+| [air_calculator-rs](https://github.com/wilinz/air_calculator-rs) | Rust 核心：识别解码循环、LaTeX 求值与 C ABI |
+| [hand-track](https://github.com/wilinz/hand-track) | 手部检测：palm + landmark 两段式流水线与两端权重 |
+| [edge-infer](https://github.com/wilinz/edge-infer) | 推理抽象：`Engine` trait + LiteRT / Core ML 后端 |
+| [air_calculator_py](https://github.com/wilinz/air_calculator_py) | 模型训练、合成数据生成与端侧导出 |
+
 ## 功能
 
 - 空中书写：手部关键点跟踪 + 捏合手势起落笔，绘制轨迹
@@ -57,17 +67,9 @@ packages/aircalc_native/    核心库的 Dart 绑定与 build hook
 flutter_math_fork/          公式渲染（带光标插入）
 ```
 
-另有四个兄弟仓：
-
-| 仓库 | 职责 |
-|---|---|
-| [air_calculator-rs](https://github.com/wilinz/air_calculator-rs) | 识别核心、LaTeX 求值与 C ABI |
-| [hand-track](https://github.com/wilinz/hand-track) | 手部检测流水线与两端权重 |
-| [edge-infer](https://github.com/wilinz/edge-infer) | 推理抽象：`Engine` trait + LiteRT / Core ML 后端 |
-| [air_calculator_py](https://github.com/wilinz/air_calculator_py) | 模型训练与端侧导出 |
-
-几个仓要**并排 checkout**——Rust 侧是 path 依赖，build hook 默认按这个布局去找
-核心库与运行时构件（放在别处见 `pubspec.yaml` 里的 `hooks.user_defines` 说明）：
+四个兄弟仓见开头的仓库矩阵。几个仓要**并排 checkout**——Rust 侧是 path 依赖，
+build hook 默认按这个布局去找核心库与运行时构件（放在别处见 `pubspec.yaml` 里的
+`hooks.user_defines` 说明）：
 
 ```
 some-dir/
