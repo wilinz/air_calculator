@@ -7,6 +7,7 @@ import 'dart:ui';
 import 'package:aircalc_native/aircalc_native.dart' as mwh;
 
 import '../models/gesture.dart';
+import '../utils/latex_text.dart';
 
 /// 引擎单次推理的原始结果（未后处理）。
 class EngineInferenceResult {
@@ -26,9 +27,16 @@ class EngineInferenceResult {
   /// 将 token id 转为原始字符串（skip BOS + special tokens）。
   String toRawString(List<String> vocab, int specialN) {
     final sb = StringBuffer();
+    // 上一个写进去的 token。token 首尾相接时，`\pi` 后面跟 `e` 会粘成
+    // `\pie` 这个不存在的命令，渲染和求值一起失败——按需补空格。
+    String prev = '';
     for (int i = 1; i < tokenIds.length; i++) {
       final id = tokenIds[i];
-      if (id >= specialN && id < vocab.length) sb.write(vocab[id]);
+      if (id < specialN || id >= vocab.length) continue;
+      final tok = vocab[id];
+      if (latexNeedsSeparator(prev, tok)) sb.write(' ');
+      sb.write(tok);
+      prev = tok;
     }
     return sb.toString();
   }

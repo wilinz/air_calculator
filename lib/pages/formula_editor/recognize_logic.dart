@@ -2,21 +2,33 @@
 part of '../formula_editor_page.dart';
 
 extension _RecognizeLogic on _FormulaEditorPageState {
-
   void _startAutoRecogCountdown() {
     if (_autoRecogTimer != null) return; // 已在倒计时中
     if (_suppressAutoRecog) return; // 刚撤销了识别，等用户重新落笔再开启
-    if (_airCanvas.strokeCount == 0 || !_drawingEnabled || _airRecognizing) return;
-    _autoRecogDeadline = DateTime.now().add(const Duration(milliseconds: _FormulaEditorPageState._kAutoRecogDelayMs));
+    if (_airCanvas.strokeCount == 0 || !_drawingEnabled || _airRecognizing)
+      return;
+    _autoRecogDeadline = DateTime.now().add(
+      const Duration(milliseconds: _FormulaEditorPageState._kAutoRecogDelayMs),
+    );
     _autoRecogProgressVN.value = 0.0;
-    _autoRecogTimer = Timer(const Duration(milliseconds: _FormulaEditorPageState._kAutoRecogDelayMs), () {
-      _cancelAutoRecog();
-      _airRecognizeNow();
-    });
+    _autoRecogTimer = Timer(
+      const Duration(milliseconds: _FormulaEditorPageState._kAutoRecogDelayMs),
+      () {
+        _cancelAutoRecog();
+        _airRecognizeNow();
+      },
+    );
     _autoRecogUiTick = Timer.periodic(const Duration(milliseconds: 50), (_) {
       if (_autoRecogDeadline == null) return;
-      final remaining = _autoRecogDeadline!.difference(DateTime.now()).inMilliseconds;
-      final progress = 1.0 - (remaining / _FormulaEditorPageState._kAutoRecogDelayMs).clamp(0.0, 1.0);
+      final remaining = _autoRecogDeadline!
+          .difference(DateTime.now())
+          .inMilliseconds;
+      final progress =
+          1.0 -
+          (remaining / _FormulaEditorPageState._kAutoRecogDelayMs).clamp(
+            0.0,
+            1.0,
+          );
       _autoRecogProgressVN.value = progress;
     });
   }
@@ -100,74 +112,99 @@ extension _RecognizeLogic on _FormulaEditorPageState {
     _ptTracker.reset();
   }
 
-  /// 识别后处理：修正计算器场景下的常见错字
-  /// - 字母 x → \times（计算器里几乎不用 x 当变量）
-  /// - q → 9（手写 9 容易识别成 q）
-  /// - Greek 字母 ψ/ϕ/φ → 4，δ/σ → 6 等（不影响 \pi、\sqrt 等 LaTeX 命令）
-  String _postProcessMath(String input) {
-    String s = input;
+  /// 识别后处理。实现是下面的顶层纯函数——它不碰 state，提出来才好测。
+  String _postProcessMath(String input) => postProcessMathForTest(input);
+}
 
-    // \overline{...} → 减号（手写减号常被识别为上划线）
-    // 1) \overline{}（空参数） → -
-    // 2) \overline{X} → X-（不太可能，X 是孤立内容）→ 仍按 - 处理避免奇怪输出
-    s = s.replaceAll(RegExp(r'\\overline\s*\{[^{}]*\}'), '-');
-    s = s.replaceAll(RegExp(r'\\overline\b\s*'), '-');
+/// 识别后处理：修正计算器场景下的常见错字
+/// - 字母 x → \times（计算器里几乎不用 x 当变量）
+/// - q → 9（手写 9 容易识别成 q）
+/// - Greek 字母 ψ/ϕ/φ → 4，δ/σ → 6 等（不影响 \pi、\sqrt 等 LaTeX 命令）
+///
+/// 名字带 ForTest 是因为它同时是测试入口；`part of` 的文件里没法只对测试
+/// 开放，索性明说。
+String postProcessMathForTest(String input) {
+  String s = input;
 
-    // Greek/letter → digit 映射（视觉相似）
-    const greekToDigit = {
-      'ψ': '4', 'ϕ': '4', 'φ': '4',
-      'δ': '6', 'σ': '6',
-      'q': '9',
-      'ℓ': '1',
-    };
+  // \overline{...} → 减号（手写减号常被识别为上划线）
+  // 1) \overline{}（空参数） → -
+  // 2) \overline{X} → X-（不太可能，X 是孤立内容）→ 仍按 - 处理避免奇怪输出
+  s = s.replaceAll(RegExp(r'\\overline\s*\{[^{}]*\}'), '-');
+  s = s.replaceAll(RegExp(r'\\overline\b\s*'), '-');
 
-    // 替换不在 \command 里面的孤立字符
-    final buf = StringBuffer();
-    int i = 0;
-    while (i < s.length) {
-      // 跳过 LaTeX 命令 \word（如 \pi, \times, \frac, \sqrt 等）
-      if (s[i] == '\\') {
+  // Greek/letter → digit 映射（视觉相似）
+  const greekToDigit = {
+    'ψ': '4',
+    'ϕ': '4',
+    'φ': '4',
+    'δ': '6',
+    'σ': '6',
+    'q': '9',
+    'ℓ': '1',
+  };
+
+  // 替换不在 \command 里面的孤立字符
+  final buf = StringBuffer();
+  int i = 0;
+  while (i < s.length) {
+    // 跳过 LaTeX 命令 \word（如 \pi, \times, \frac, \sqrt 等）
+    if (s[i] == '\\') {
+      buf.write(s[i]);
+      i++;
+      final cmd = StringBuffer();
+      while (i < s.length && RegExp(r'[a-zA-Z]').hasMatch(s[i])) {
+        cmd.write(s[i]);
         buf.write(s[i]);
         i++;
-        while (i < s.length && RegExp(r'[a-zA-Z]').hasMatch(s[i])) {
+      }
+      // \begin{matrix} / \end{pmatrix} 里的环境名是标识符，不是算式：
+      // 底下的 x→\times、q→9、T→+ 会把 matrix 改成 matri \times，
+      // 环境名一坏，渲染和求值一起失败。整组原样抄过去。
+      final name = cmd.toString();
+      if ((name == 'begin' || name == 'end') && i < s.length && s[i] == '{') {
+        while (i < s.length) {
           buf.write(s[i]);
+          final done = s[i] == '}';
           i++;
+          if (done) break;
         }
-        continue;
       }
-
-      final ch = s[i];
-
-      // 字母 x → \times（裸 x，已经过滤了 \times \xi 等 LaTeX 命令）
-      // 计算器场景下没有变量，统一替换
-      if (ch == 'x' || ch == 'X') {
-        buf.write(r' \times ');
-        i++;
-        continue;
-      }
-
-      // 大写 T → + （手写 + 容易被识别成 T）
-      if (ch == 'T') {
-        buf.write('+');
-        i++;
-        continue;
-      }
-
-      // 字母→数字映射
-      if (greekToDigit.containsKey(ch)) {
-        buf.write(greekToDigit[ch]);
-        i++;
-        continue;
-      }
-
-      buf.write(ch);
-      i++;
+      continue;
     }
 
-    // 多余空格压缩
-    return buf.toString().replaceAll(RegExp(r'\s+'), ' ').trim();
+    final ch = s[i];
+
+    // 字母 x → \times（裸 x，已经过滤了 \times \xi 等 LaTeX 命令）
+    // 计算器场景下没有变量，统一替换
+    if (ch == 'x' || ch == 'X') {
+      buf.write(r' \times ');
+      i++;
+      continue;
+    }
+
+    // 大写 T → + （手写 + 容易被识别成 T）
+    if (ch == 'T') {
+      buf.write('+');
+      i++;
+      continue;
+    }
+
+    // 字母→数字映射
+    if (greekToDigit.containsKey(ch)) {
+      buf.write(greekToDigit[ch]);
+      i++;
+      continue;
+    }
+
+    buf.write(ch);
+    i++;
   }
 
+  // 多余空格压缩
+  return buf.toString().replaceAll(RegExp(r'\s+'), ' ').trim();
+}
+
+extension _RecognizeLogicRest on _FormulaEditorPageState {
   /// 仅还原识别前的 LaTeX，笔画保留不变；快照不清除以便用户继续完整还原
   void _undoAirRecognizeLatexOnly() {
     if (_preRecogLatex == null) return;
