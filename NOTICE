@@ -22,17 +22,28 @@ specific language governing permissions and limitations under the License.
 ### flutter_math_fork/
 
 A vendored, modified copy of the `flutter_math_fork` package
-(https://github.com/znjameswu/flutter_math), Copyright the flutter_math
-authors, licensed under the Apache License 2.0. Its own LICENSE is kept at
-`flutter_math_fork/LICENSE`. The package itself follows KaTeX
-(https://github.com/KaTeX/KaTeX, MIT) for layout and font metrics.
+(https://github.com/simpleclub/flutter_math), itself a fork of `flutter_math`
+(https://github.com/znjameswu/flutter_math). Its own LICENSE -- the Apache
+License 2.0 -- is kept unchanged at `flutter_math_fork/LICENSE`, and the
+directory stays under it rather than under this repository's own copyright.
 
-Modifications (Apache 2.0 section 4(b)): `MathController` is exported from the
-public library and its null-safety was corrected so an unset AST throws instead
-of dereferencing; selection sanitising accepts a nullable AST; unnamed `library;`
-declarations and assorted analyzer lints were updated for current Flutter SDKs.
-The files in that directory carry no copyright header of this project's and are
-not covered by the header added to the rest of the tree.
+Two licenses apply inside that directory, and the files say which:
+
+  · 48 files ported from KaTeX (https://github.com/KaTeX/KaTeX) carry their own
+    MIT notice, Copyright (c) 2013-2019 Khan Academy and other contributors and
+    Copyright (c) 2020 znjameswu. Those notices are upstream's and were left
+    exactly as they were found; MIT requires only that they be retained.
+
+  · The remaining 136 files carry the Apache 2.0 header naming the flutter_math
+    authors and the flutter_math_fork maintainers as the copyright holders. 61
+    of them, the ones actually changed here, add a `Modifications copyright 2026
+    wilinz.` line as section 4(b) requires.
+
+Modifications: `MathController` is exported from the public library and its
+null-safety was corrected so an unset AST throws instead of being dereferenced;
+selection sanitising accepts a nullable AST. The rest is mechanical -- string-form
+`part of` directives, redundant `this.` removed, missing `@override`, unnamed
+`library;` -- to satisfy the analyzer on current Flutter SDKs.
 
 ### Platform scaffolding
 
