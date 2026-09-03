@@ -58,7 +58,6 @@ dependencies:
   flutter_math_fork:
     path: ./flutter_math_fork
   sensors_plus: ^7.0.0
-  math_expressions: ^2.6.0
   flutter_tts: ^4.2.0
   record: ^6.2.0
   http: ^1.6.0

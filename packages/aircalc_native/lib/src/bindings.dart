@@ -1,4 +1,4 @@
-// 由 package:ffigen 从 src/mwh.h 生成，请勿手工编辑。
+// 由 package:ffigen 从 src/aircalc.h 生成，请勿手工编辑。
 // ignore_for_file: always_specify_types, camel_case_types, non_constant_identifier_names
 
 // AUTO GENERATED FILE, DO NOT EDIT.
@@ -14,7 +14,7 @@ import 'dart:ffi' as ffi;
 ///
 /// model_dir   模型目录。各后端按自己的命名约定在其中找文件：
 /// LiteRT      prefix_enc.tflite / decoder.tflite
-/// Core ML    prefix_enc.mlmodelc / decoder.mlmodelc（多函数）
+/// ExecuTorch  prefix_enc.pte    / decoder.pte（多方法）
 /// 退回 decoder_prefill_kv.pte + decoder_step_kv.pte
 /// vocab_json  vocab.json 的完整内容
 /// backend     见 AIRCALC_BACKEND_*
@@ -65,7 +65,77 @@ external int ink_hmer_recognize(
 @ffi.Native<ffi.Void Function(ffi.Pointer<InkHmerResult>)>()
 external void ink_hmer_result_free(ffi.Pointer<InkHmerResult> r);
 
+/// 初始化手部检测。两个模型均为内存中的字节。成功返回 AIRCALC_OK。
+@ffi.Native<
+  ffi.Int32 Function(
+    ffi.Pointer<ffi.Uint8>,
+    ffi.Size,
+    ffi.Pointer<ffi.Uint8>,
+    ffi.Size,
+  )
+>()
+external int hand_track_init(
+  ffi.Pointer<ffi.Uint8> palm_data,
+  int palm_len,
+  ffi.Pointer<ffi.Uint8> landmark_data,
+  int landmark_len,
+);
 
+@ffi.Native<ffi.Int32 Function(ffi.Pointer<ffi.Char>, ffi.Pointer<ffi.Char>)>()
+external int hand_track_init_path(
+  ffi.Pointer<ffi.Char> palm_path,
+  ffi.Pointer<ffi.Char> landmark_path,
+);
+
+/// 预热：把手掌与关键点两个模型各跑一次，触发 Core ML 编译。
+/// 应在 init 之后、进入取景之前调一次。
+@ffi.Native<ffi.Void Function()>()
+external void hand_track_warm_up();
+
+/// 是否已初始化。
+@ffi.Native<ffi.Int32 Function()>()
+external int hand_track_ready();
+
+/// 在一帧上检测手部。pixels 为 w*h*4 字节；format：0 = RGBA，1 = BGRA。
+@ffi.Native<
+  HandTrackHands Function(
+    ffi.Pointer<ffi.Uint8>,
+    ffi.Int32,
+    ffi.Int32,
+    ffi.Int32,
+    ffi.Float,
+    ffi.Int32,
+  )
+>()
+external HandTrackHands hand_track_detect(
+  ffi.Pointer<ffi.Uint8> pixels,
+  int w,
+  int h,
+  int num_hands,
+  double min_presence,
+  int format,
+);
+
+/// 释放手部检测资源。重复调用安全。
+@ffi.Native<ffi.Void Function()>()
+external void hand_track_destroy();
+
+/// 求值一个 LaTeX 数学表达式。
+///
+/// 成功返回结果字符串（UTF-8，NUL 结尾），*err 置 AIRCALC_CALC_OK；返回的指针
+/// 必须交给 aircalc_string_free 释放。失败返回 NULL，*err 为上面的错误码之一。
+/// err 可传 NULL。
+@ffi.Native<
+  ffi.Pointer<ffi.Char> Function(ffi.Pointer<ffi.Char>, ffi.Pointer<ffi.Int32>)
+>()
+external ffi.Pointer<ffi.Char> aircalc_eval_latex(
+  ffi.Pointer<ffi.Char> expr,
+  ffi.Pointer<ffi.Int32> err,
+);
+
+/// 释放 aircalc_eval_latex 返回的字符串。传 NULL 安全。
+@ffi.Native<ffi.Void Function(ffi.Pointer<ffi.Char>)>()
+external void aircalc_string_free(ffi.Pointer<ffi.Char> s);
 
 /// 一个采样点。t 为秒。
 final class InkHmerPoint extends ffi.Struct {
@@ -110,6 +180,35 @@ final class InkHmerResult extends ffi.Struct {
   external double total_ms;
 }
 
+final class HandTrackHand extends ffi.Struct {
+  /// < "Left" / "Right"
+  @ffi.Array.multi([6])
+  external ffi.Array<ffi.Char> handedness;
+
+  /// < 归一化图像坐标 [0,1]
+  @ffi.Array.multi([63])
+  external ffi.Array<ffi.Float> landmarks;
+
+  /// < 世界坐标，单位米
+  @ffi.Array.multi([63])
+  external ffi.Array<ffi.Float> world_landmarks;
+
+  @ffi.Float()
+  external double presence;
+
+  /// < 检出时为 21
+  @ffi.Int32()
+  external int landmark_count;
+}
+
+final class HandTrackHands extends ffi.Struct {
+  @ffi.Array.multi([2])
+  external ffi.Array<HandTrackHand> hands;
+
+  @ffi.Int32()
+  external int count;
+}
+
 const int AIRCALC_OK = 0;
 
 const int AIRCALC_ERR_INVALID_HANDLE = -1;
@@ -127,3 +226,23 @@ const int AIRCALC_BACKEND_AUTO = 0;
 const int AIRCALC_BACKEND_LITERT = 1;
 
 const int AIRCALC_BACKEND_COREML = 3;
+
+const int HAND_TRACK_LANDMARKS = 63;
+
+const int HAND_TRACK_MAX_HANDS = 2;
+
+const int AIRCALC_CALC_OK = 0;
+
+const int AIRCALC_CALC_EMPTY = -100;
+
+const int AIRCALC_CALC_SYNTAX = -101;
+
+const int AIRCALC_CALC_UNKNOWN_TOKEN = -102;
+
+const int AIRCALC_CALC_UNSUPPORTED = -103;
+
+const int AIRCALC_CALC_NOT_FINITE = -104;
+
+const int AIRCALC_CALC_FACTORIAL = -105;
+
+const int AIRCALC_CALC_TOO_DEEP = -106;

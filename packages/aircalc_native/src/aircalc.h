@@ -144,6 +144,31 @@ HandTrackHands hand_track_detect(const uint8_t* pixels, int32_t w, int32_t h,
 /// 释放手部检测资源。重复调用安全。
 void hand_track_destroy(void);
 
+
+// ─── LaTeX 求值 ──────────────────────────────────────────────────────────────
+//
+// 纯计算，不依赖任何模型或句柄。实现在 latex-calc crate：词法 → 语法 → AST
+// → f64，不经过中缀串，也不依赖第三方表达式库。
+
+#define AIRCALC_CALC_OK              0
+#define AIRCALC_CALC_EMPTY        -100  // 输入为空或只有空白
+#define AIRCALC_CALC_SYNTAX       -101  // 语法错误、括号不匹配、缺操作数
+#define AIRCALC_CALC_UNKNOWN_TOKEN -102 // 不认识的字符或命令
+#define AIRCALC_CALC_UNSUPPORTED  -103  // 结构合法但语义不支持（未绑定变量、非方阵…）
+#define AIRCALC_CALC_NOT_FINITE   -104  // 除零、负数开偶次方、ln 非正数、溢出
+#define AIRCALC_CALC_FACTORIAL    -105  // 阶乘参数非法或过大
+#define AIRCALC_CALC_TOO_DEEP     -106  // 嵌套过深
+
+/// 求值一个 LaTeX 数学表达式。
+///
+/// 成功返回结果字符串（UTF-8，NUL 结尾），*err 置 AIRCALC_CALC_OK；返回的指针
+/// 必须交给 aircalc_string_free 释放。失败返回 NULL，*err 为上面的错误码之一。
+/// err 可传 NULL。
+char* aircalc_eval_latex(const char* expr, int32_t* err);
+
+/// 释放 aircalc_eval_latex 返回的字符串。传 NULL 安全。
+void aircalc_string_free(char* s);
+
 #ifdef __cplusplus
 }
 #endif

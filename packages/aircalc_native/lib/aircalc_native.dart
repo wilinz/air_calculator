@@ -6,3 +6,5 @@ library;
 
 export 'src/recognizer.dart' show Recognizer, RecognitionResult, MwhBackend, AircalcException;
 export 'src/stroke.dart' show StrokePoint, Stroke;
+export 'src/calculator.dart'
+    show evalLatex, evalLatexOrNull, CalcException, CalcErrorKind;
