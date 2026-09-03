@@ -253,14 +253,44 @@ Rust 核心由 `packages/aircalc_native` 的 build hook 编译，不需要单独
 
 ## License
 
-Apache License 2.0 — see `LICENSE` and `NOTICE`.
+Apache License 2.0 **with an attribution requirement** — see `LICENSE` (the
+requirement is the ADDITIONAL TERMS section at its end) and `NOTICE`. Because of
+that section this repository is not under the stock Apache-2.0; do not label it,
+or a fork of it, as plain Apache-2.0.
+
+**This applies to the client only.** The project's five libraries —
+[air_calculator-rs](https://github.com/wilinz/air_calculator-rs),
+[edge-infer](https://github.com/wilinz/edge-infer),
+[hand-track](https://github.com/wilinz/hand-track),
+[air_calculator_py](https://github.com/wilinz/air_calculator_py) and
+[air_calculator-models](https://github.com/wilinz/air_calculator-models) — are
+under the unmodified Apache License 2.0 and ask nothing of you. If you only want
+to reuse the recognition core or the inference layer, take the libraries.
 
 The code is free to use, modify, redistribute and commercialize, including
 publishing derivative applications on the App Store, Google Play or anywhere
-else. Per section 6 of the Apache License 2.0, no trademark or product name
-rights are granted: **Air Calculator**, **AirCalculator**, `air_calculator` as
-a product name, and the application icons and logos in this repository are
-reserved, and may not be used to publish or promote a derivative work without
-prior written permission. Fork it, but ship it under your own name. Factual
-references such as "based on Air Calculator" are fine, as long as they do not
-suggest endorsement.
+else. Two things are asked in return.
+
+**1. Do not ship under the name Air Calculator.** Per section 6 of the Apache
+License 2.0, no trademark or product name rights are granted: **Air Calculator**,
+**AirCalculator**, `air_calculator` as a product name, and the application icons
+and logos in this repository are reserved, and may not be used to publish or
+promote a derivative work without prior written permission. Fork it, but ship it
+under your own name.
+
+**2. Credit this project if you keep the air-writing or handwriting
+recognition.** Display
+
+> Powered by Air Calculator
+
+on a launch, About or settings screen — any one of them, at normal body text
+size — and give this project's address,
+`https://github.com/wilinz/air_calculator`, in your settings or About screen.
+Remove those two features, or use only the libraries above, and nothing is
+required. The binding wording — what counts as legible, and when the requirement
+does not apply at all — is the ADDITIONAL TERMS in `LICENSE`.
+
+These two do not contradict each other: the **product name** must be your own,
+the **credit** must point here. "Powered by Air Calculator" is the one use of the
+reserved name that is permitted — and required — and displaying it grants no
+further right to the name.

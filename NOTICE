@@ -4,9 +4,10 @@ The Flutter client of the Air Calculator project.
 
 Copyright 2026 wilinz.
 
-Licensed under the Apache License, Version 2.0 (the "License"); you may not use
-this work except in compliance with the License. You may obtain a copy of the
-License at
+Licensed under the Apache License, Version 2.0 (the "License") WITH THE
+ATTRIBUTION REQUIREMENT stated in the ADDITIONAL TERMS at the end of the LICENSE
+file. This client application is therefore not under the stock Apache License
+2.0; the project's libraries are. You may obtain a copy of the License at
 
     http://www.apache.org/licenses/LICENSE-2.0
 
@@ -14,6 +15,29 @@ Unless required by applicable law or agreed to in writing, software distributed
 under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
 CONDITIONS OF ANY KIND, either express or implied. See the License for the
 specific language governing permissions and limitations under the License.
+
+--------------------------------------------------------------------------------
+
+## Attribution required in derivative works
+
+A derivative of this application that keeps its air-writing or handwriting
+recognition must show
+
+    Powered by Air Calculator
+
+somewhere a user reaches in ordinary use -- a launch, About or settings screen --
+and must give this project's address
+
+    https://github.com/wilinz/air_calculator
+
+in its settings or About screen. The exact wording of the obligation, including
+what counts as legible and when it does not apply at all, is in the ADDITIONAL
+TERMS at the end of LICENSE. Section 4(d) of the Apache License already requires
+You to carry this NOTICE into Your own distribution.
+
+This requirement is on this repository only. The libraries it depends on --
+air_calculator-rs, edge-infer, hand-track, air_calculator_py and
+air_calculator-models -- are plain Apache 2.0 and ask nothing of You.
 
 --------------------------------------------------------------------------------
 
@@ -82,4 +106,6 @@ Fork it, but ship it under your own name.
 Factual, non-branding references to this project's name are fine — for example
 stating that your work is "based on Air Calculator" or "a fork of Air
 Calculator", provided this does not suggest endorsement by or affiliation with
-the copyright holder.
+the copyright holder. The "Powered by Air Calculator" notice required above is
+such a reference: it is not merely permitted, it is required, and displaying it
+does not give you any further right to the name.

@@ -175,6 +175,8 @@ const _zh = <String, String>{
   'bench_report_title': '端侧推理延迟测试报告',
   'bench_entry': '推理延迟测试',
   'load_failed': '加载失败: @error',
+  'about': '关于',
+  'project_repo': '项目地址',
 };
 
 const _en = <String, String>{
@@ -324,6 +326,8 @@ const _en = <String, String>{
   'bench_report_title': 'On-Device Inference Latency Report',
   'bench_entry': 'Inference Latency Test',
   'load_failed': 'Load failed: @error',
+  'about': 'About',
+  'project_repo': 'Project repository',
 };
 
 /// Manages app locale: persists to SharedPreferences and toggles between zh/en.

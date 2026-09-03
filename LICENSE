@@ -200,3 +200,50 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
+
+--------------------------------------------------------------------------------
+
+                            ADDITIONAL TERMS
+                       Attribution in derivative works
+
+These terms apply to this repository (the Air Calculator client application)
+ONLY. They do not apply to the project's libraries -- air_calculator-rs,
+edge-infer, hand-track, air_calculator_py and air_calculator-models are licensed
+under the unmodified Apache License 2.0 and carry no attribution requirement.
+
+Because of these terms, this repository is NOT under the stock Apache License
+2.0. It is under "Apache License 2.0 with the attribution requirement stated
+below". Do not describe it, or a fork of it, as plain Apache-2.0.
+
+As a condition of the rights granted in Section 2 of the Apache License 2.0, if
+You distribute or publicly deploy a Derivative Work of this application that
+retains its air-writing or handwriting-recognition functionality, You must:
+
+  1. DISPLAY the notice
+
+         Powered by Air Calculator
+
+     in the running application, in a place a user reaches during ordinary use
+     -- a launch screen, an "About" screen, or a settings screen is sufficient.
+     It must be legible: in the application's normal body text size or larger,
+     in a color that contrasts with its background, and not hidden behind a
+     developer or debug option. It need not appear on every screen.
+
+  2. PROVIDE the address of this project
+
+         https://github.com/wilinz/air_calculator
+
+     in the application's settings or "About" screen, as text or as a link.
+
+  3. PRESERVE this requirement in the LICENSE and NOTICE files You distribute,
+     so that it reaches anyone downstream of You.
+
+You are NOT required to display anything if You remove the air-writing and
+handwriting-recognition functionality, or if You use only the project's
+libraries rather than this application.
+
+Relationship to the reserved names in NOTICE: the NOTICE file reserves "Air
+Calculator" and forbids using it to brand a derivative work. The notice required
+above is the one permitted use of the name -- it credits this project as an
+upstream, it does not name Your product. Your application still has to ship
+under its own name.

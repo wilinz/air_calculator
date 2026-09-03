@@ -56,6 +56,10 @@ part 'formula_editor/gesture_logic.dart';
 part 'formula_editor/recognize_logic.dart';
 part 'formula_editor/rotation_utils.dart';
 
+/// 本项目地址。LICENSE 的 ADDITIONAL TERMS 要求保留识别功能的衍生作品
+/// 在设置或关于页给出它，所以这里也留一份。
+const kProjectRepoUrl = 'https://github.com/wilinz/air_calculator';
+
 // ─── Entry point ─────────────────────────────────────────────────────────────
 
 /// 打开公式编辑器页面，返回用户输入的 LaTeX，取消返回 null。
@@ -783,6 +787,33 @@ class _FormulaEditorPageState extends State<FormulaEditorPage>
                     Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (_) => BenchmarkPage(service: _recService),
+                      ),
+                    );
+                  },
+                ),
+                // 项目地址。LICENSE 的 ADDITIONAL TERMS 要求衍生作品在设置或
+                // 关于页给出本项目地址——自己先照做，顺便给下游一个合规样例。
+                // 没有 url_launcher 依赖，点一下复制到剪贴板，同样满足「以文本
+                // 或链接形式给出」。
+                ListTile(
+                  leading: const Icon(Icons.info_outline),
+                  title: Text('about'.tr),
+                  subtitle: Text(
+                    '${'project_repo'.tr}\n$kProjectRepoUrl',
+                    style: const TextStyle(fontSize: 12),
+                  ),
+                  isThreeLine: true,
+                  trailing: const Icon(Icons.copy, size: 18),
+                  contentPadding: EdgeInsets.zero,
+                  onTap: () async {
+                    await Clipboard.setData(
+                      const ClipboardData(text: kProjectRepoUrl),
+                    );
+                    if (!ctx.mounted) return;
+                    ScaffoldMessenger.of(ctx).showSnackBar(
+                      SnackBar(
+                        content: Text('copied'.tr),
+                        duration: const Duration(seconds: 2),
                       ),
                     );
                   },
