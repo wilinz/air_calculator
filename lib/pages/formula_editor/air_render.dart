@@ -955,6 +955,9 @@ extension _AirRender on _FormulaEditorPageState {
                 // 绿：中栏（运算键 + air actions 在上，光标滑块 + LaTeX 原文 + 录音提示在下）
                 Expanded(
                   child: SingleChildScrollView(
+                    // 中栏在左右两栏之间，横向不需要 inset；底部仍要让出
+                    // home indicator，否则最后一行控件会被屏幕圆角切到。
+                    padding: EdgeInsets.only(bottom: mq.padding.bottom),
                     child: Column(
                       children: [
                         _buildQuickToolbar(),

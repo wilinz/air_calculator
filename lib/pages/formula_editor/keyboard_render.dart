@@ -258,7 +258,9 @@ extension _KeyboardRender on _FormulaEditorPageState {
         return Container(
           // 横屏由外层统一 bg
           color: _isLandscapeAir ? Colors.transparent : _airBg(_Pal.scaffold),
-          padding: const EdgeInsets.fromLTRB(8, 6, 8, 6),
+          // 底部让出安全区。padding 在 Container 的 color 内部，背景仍铺到
+          // 屏幕底边，只是操作行往上收，不会被 home indicator 和圆角切到。
+          padding: EdgeInsets.fromLTRB(8, 6, 8, 6 + _safeBottom),
           child: Column(
             children: [
               // 状态行
@@ -428,7 +430,10 @@ extension _KeyboardRender on _FormulaEditorPageState {
   }
 
   Widget _buildGrid(_Category cat) => GridView.builder(
-    padding: const EdgeInsets.all(6),
+    // 底部多让出一个安全区：最后一行键否则会压在 home indicator 上，
+    // iPhone 的屏幕圆角还会切掉两侧的键。面板背景是外层 Positioned.fill
+    // 画的，铺满全高，所以这里只收内容、不会露出相机。
+    padding: EdgeInsets.fromLTRB(6, 6, 6, 6 + _safeBottom),
     physics: const NeverScrollableScrollPhysics(),
     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
       crossAxisCount: cat.cols,

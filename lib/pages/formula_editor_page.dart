@@ -111,6 +111,15 @@ class _FormulaEditorPageState extends State<FormulaEditorPage>
 
   // 计算历史（仅 standalone 模式使用）
   final _history = <_HistoryEntry>[];
+
+  /// 算式编辑撤销栈：每次 _latex 的**文本**真正变化时，把变化前的值压进来。
+  /// 挂在 controller 的 listener 上，所以键盘、退格、清空、识别几条路径都自动
+  /// 覆盖，不用逐个改写那些分散的赋值点（_backspace 里有若干分支只移光标不改
+  /// 文本，按文本比较正好把它们排除掉）。
+  final _latexUndo = <TextEditingValue>[];
+  static const _kMaxUndo = 50;
+  TextEditingValue _lastLatexValue = TextEditingValue.empty;
+  bool _restoringUndo = false;
   final bool _showHistory = false;
 
   // ── 空中手写 / 摄像头 ─────────────────────────────────────────────────────
@@ -244,6 +253,22 @@ class _FormulaEditorPageState extends State<FormulaEditorPage>
     );
   }
 
+  /// 把算式回退到上一次的样子。选区一并恢复，光标停在当时的位置。
+  void _undoLatex() {
+    if (_latexUndo.isEmpty) return;
+    final prev = _latexUndo.removeLast();
+    _restoringUndo = true;
+    _latex.value = prev;
+    _lastLatexValue = prev;
+    _lastTextLen = prev.text.length;
+    _restoringUndo = false;
+    setState(() => _calcResult = '');
+  }
+
+  /// 底部安全区高度（home indicator / 屏幕圆角）。软键盘弹出时 padding.bottom
+  /// 归 0，由 viewInsets 接管，正是想要的：那时底边被键盘盖住，不用再让。
+  double get _safeBottom => MediaQuery.of(context).padding.bottom;
+
   Widget _air(String id, VoidCallback? onTap, Widget child) {
     if (!_airMode || onTap == null) return child;
     return AirClickable(
@@ -287,10 +312,18 @@ class _FormulaEditorPageState extends State<FormulaEditorPage>
     });
     _latex = TextEditingController(text: widget.initial);
     _lastTextLen = widget.initial.length;
+    _lastLatexValue = _latex.value;
     _latex.addListener(() {
       final newLen = _latex.text.length;
       final lengthChanged = newLen != _lastTextLen;
       _lastTextLen = newLen;
+      // 文本变了才记一步；纯光标移动不记，否则撤销会空走几下。
+      // _restoringUndo 期间跳过，避免撤销自己把恢复前的值又压回栈里。
+      if (!_restoringUndo && _latex.text != _lastLatexValue.text) {
+        _latexUndo.add(_lastLatexValue);
+        if (_latexUndo.length > _kMaxUndo) _latexUndo.removeAt(0);
+      }
+      _lastLatexValue = _latex.value;
       setState(() {});
       // 仅在文本变化（插入/退格）时自动滚动；纯光标移动不滚（防止把光标滚出屏幕）
       if (lengthChanged) _scheduleScrollToCursor();
@@ -1009,6 +1042,9 @@ class _FormulaEditorPageState extends State<FormulaEditorPage>
                           ],
                         ),
                 ),
+                // 只处理软键盘。底部安全区不在这里加：这一层加 SizedBox 是没有
+                // 背景的空白，会漏出后面的相机预览。安全区由各面板自己在**背景
+                // 内部**让出（同 _buildAirControlBar 的做法），背景仍铺到屏幕底边。
                 if (bottom > 0) SizedBox(height: bottom),
               ],
             ),
