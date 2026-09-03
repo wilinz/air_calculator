@@ -1,3 +1,17 @@
+// Copyright 2026 wilinz.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 /// 编译 Rust 核心库，并带上它需要的推理运行时。
 ///
 /// 仓库里唯一构建原生代码的地方。一个 hook 覆盖所有平台，取代 Flutter 插件
