@@ -88,7 +88,10 @@ class AirCalculatorApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(
-      title: 'app_title'.tr,
+      // title 是构造参数，求值时同一次调用里的 translations 还没装进 Get，
+      // '...'.tr 会原样返回 key（任务列表显示成 app_title）。onGenerateTitle
+      // 在 build 之后才调，那时翻译已就位。
+      onGenerateTitle: (_) => 'app_title'.tr,
       debugShowCheckedModeBanner: false,
       translations: AppTranslations(),
       locale: initialLocale,
