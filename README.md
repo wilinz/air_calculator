@@ -187,9 +187,15 @@ MathWriting 全量验证集上 EM 77.09% / char-CER 3.84%；基准页这 500 条
 ExpRate 74.60%。
 
 Android 上识别与手部检测都请求 GPU 加速器（OpenCL），接不了的算子由 CPU 兜底。
-encoder 是 partial offload，接不了的算子退回 CPU。prefill 与 decode 共用
-同一个 CompiledModel，这样 prefill 的 KV 输出缓冲能直接对接 decode 的输入缓冲，
-省掉一趟 GPU→CPU→GPU 往返——实测那一趟占 prefill 耗时的八成。
+识别的三个子图都**整图下沉**——encoder `152/152`、prefill `455/455`、
+decode `484/484`，各 1 个分区，零算子留在 CPU。这不是默认结果，是导出侧改出来的：
+KV cache 从一个 `[8,2,1,80,512]` 大张量拆成逐层独立张量，消掉了图里 48 个
+GPU 接不了的 `SLICE`；encoder 那条 `CAST → GREATER_EQUAL → SELECT_V2` 的 BOOL
+路径也一并绕掉。改之前是 574/671、3 分区，跑图 16.7 ms；改之后 2.6 ms。
+
+prefill 与 decode 还共用同一个 CompiledModel，这样 prefill 的 KV 输出缓冲能直接
+对接 decode 的输入缓冲，省掉一趟 GPU→CPU→GPU 往返——实测那一趟占 prefill 耗时
+的八成。
 `AndroidManifest.xml` 里那几行 `uses-native-library libOpenCL.so` 就是为此声明的：
 targetSdk ≥ 31 起厂商的非 NDK 原生库默认对应用不可见，漏了会静默退回 OpenGL，
 手部检测单帧从十几毫秒掉到 44 ms。
