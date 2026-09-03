@@ -175,15 +175,23 @@ const _kSpecial = [
   _MathKey.back(),
 
   _MathKey.tex(r'\binom{n}{k}', r'\binom{}{}', cursor: 7),
+  // 中文教材的组合数写法，与 \binom 等价；光标落在下标（总数）里
+  _MathKey.tex(r'C_n^k', r'C_{}^{}', cursor: 3),
   _MathKey('%', '%'),
   _MathKey('=', '='),
-  _MathKey(',', ','),
   _MathKey('(', '('),
 
+  // 2×2：光标落在左上角单元格
   _MathKey.tex(
     r'\begin{vmatrix}a&b\\c&d\end{vmatrix}',
     r'\begin{vmatrix}&\\\end{vmatrix}',
-    cursor: 16,
+    cursor: 15,
+  ),
+  // 3×3
+  _MathKey.tex(
+    r'\begin{vmatrix}a&b&c\\d&e&f\\g&h&i\end{vmatrix}',
+    r'\begin{vmatrix}&&\\&&\\&&\end{vmatrix}',
+    cursor: 15,
   ),
   _MathKey.tex(r'\pi', r'\pi '),
   _MathKey('e', 'e'),
